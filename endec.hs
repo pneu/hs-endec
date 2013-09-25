@@ -32,7 +32,11 @@ main = do
   print g
   let e = decode' k g
   print e
-  return d
+  fromRight d
+
+fromRight :: Either a b -> b
+fromRight (Left a)  = error "failed to encode"
+fromRight (Right b) = b
 
 doReadfile :: IO ByteString
 doReadfile = readfixstr
