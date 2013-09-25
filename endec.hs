@@ -1,52 +1,54 @@
-{-# LANGUAGE FlexibleInstances #-}
-module ENDEC where
+--module ENDEC (endec) where
 
 import Prelude hiding (readFile, writeFile)
 import Data.Char (isAlphaNum)
-import Data.ByteString.Char8 (ByteString, pack, unpack, readFile, writeFile, hPut)
+import Data.ByteString.Char8 (ByteString, pack, unpack, readFile, writeFile)
 import Data.Functor ((<$>))
-import qualified Data.ByteString.Base64 as B64 (encode, decode)
-import Control.Applicative (pure, (<*>))
-import Control.DeepSeq (($!!), NFData(..))
+import Control.Applicative ((<*>))
 import Data.SecureMem (toSecureMem)
 import Crypto.Cipher
 import Crypto.Cipher.Types
-import System.IO (withBinaryFile, IOMode(WriteMode), hSetBinaryMode)
-
-instance NFData KeyError
-instance NFData (IO ())
 
 main = do
-  b <- doReadfile
-  print b
-  k <- initialize b
-  let c = encode <$> k
-  print c
-  let a = B64.encode <$> c
-  print a
-  --let d = writefile <$> a
-  let d = id $!! (writefile <$> a)
-  --let x = id $!! d
-  --let e = decode <$> k <*> c
-  let g = B64.decode <$> a
-  print g
-  let e = decode' k g
-  print e
-  fromRight d
+  k <- doInitialize
+  c <- doEncode k
+  let w = writefile <$> c
+  p <- doDecode k c
+  fromRight w
 
 fromRight :: Either a b -> b
 fromRight (Left a)  = error "failed to encode"
 fromRight (Right b) = b
 
-doReadfile :: IO ByteString
-doReadfile = readfixstr
-
 initialize :: ByteString -> IO (Either KeyError DES)
 initialize s = do
   let t = takekey <$> toDESKey s
-  let x = ciphername t in print x
-  let x = cipherkeysize t in print x
+  let x = ciphername t --in print x
+  let x = cipherkeysize t --in print x
   return t
+
+doInitialize :: IO (Either KeyError DES)
+doInitialize = do
+  b <- doReadfile
+  --print b
+  initialize b
+
+doReadfile :: IO ByteString
+doReadfile = readfixstr
+
+doEncode :: Either KeyError DES -> IO (Either KeyError ByteString)
+doEncode key = do
+  let c = encode <$> key
+  --print c
+  return c
+
+doDecode :: Either KeyError DES
+            -> Either KeyError ByteString
+            -> IO (Either KeyError ByteString)
+doDecode k a = do
+  let e = decode <$> k <*> a
+  --print e
+  return e
 
 encode :: DES -> ByteString
 encode = flip ecbEncrypt (pack "ciphered")
@@ -54,21 +56,8 @@ encode = flip ecbEncrypt (pack "ciphered")
 decode :: DES -> ByteString -> ByteString
 decode = ecbDecrypt
 
-decode' :: Either KeyError DES
-            -> Either KeyError (Either String ByteString)
-            -> Either KeyError (Either String ByteString)
-decode' k g = case k of
-                Left ke -> error "error key"
-                Right k' -> case g of
-                    Left e -> error "error"
-                    Right a -> case a of
-                        Left e' -> error "error2"
-                        Right a' -> return $ return $ ecbDecrypt k' a'
-
 writefile :: ByteString -> IO ()
 writefile = writeFile ".\\ciphered.txt"
-
-eval a = a `seq` ()
 
 -- buggy
 readfile :: IO ByteString
