@@ -15,7 +15,8 @@ main = do
 doEnc :: IO ()
 doEnc = do
   k <- doInitialize
-  e <- doEncode k
+  m <- readline
+  e <- doEncode m k
   fromRight $ writefile <$> e
 
 fromRight :: Either a b -> b
@@ -26,37 +27,35 @@ doInitialize :: IO (Either KeyError DES)
 doInitialize = do
   b <- doReadStream
   --print b
-  initialize b
+  initializeKey b
 
-initialize :: ByteString -> IO (Either KeyError DES)
-initialize s = do
+initializeKey :: ByteString -> IO (Either KeyError DES)
+initializeKey s = do
   let t = takekey <$> toDESKey s
   let x = ciphername t --in print x
   let x = cipherkeysize t --in print x
   return t
 
 doReadStream :: IO ByteString
-doReadStream = readfixstr
+doReadStream = readline
 
-doEncode :: Either KeyError DES
+doEncode :: ByteString
+            -> Either KeyError DES
             -> IO (Either KeyError ByteString)
-doEncode key = do
-  let e = encode <$> key
+doEncode msg key = do
+  let e = encode msg <$> key
   --print e
   return e
 
-encode :: DES -> ByteString
-encode = flip ecbEncrypt bs
-  where bs = pack "message"
+encode :: ByteString -> DES -> ByteString
+encode = flip ecbEncrypt
 
 writefile :: ByteString -> IO ()
 writefile = writeFile ".\\cipher"
 
--- buggy
 readfile :: IO ByteString
 readfile = readFile ".\\passwd.txt"
 
--- buggy
 readline :: IO ByteString
 readline = fmap (pack . filter isAlphaNum) getLine
 
