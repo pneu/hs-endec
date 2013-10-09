@@ -1,4 +1,4 @@
---module ENDEC (endec) where
+module ENDEC (doInitialize, doEnc, doDec) where
 
 import Prelude hiding (readFile, writeFile)
 import Data.Char (isAlphaNum)
@@ -8,62 +8,75 @@ import Control.Applicative ((<*>))
 import Data.SecureMem (toSecureMem)
 import Crypto.Cipher
 import Crypto.Cipher.Types
+import System.IO (hPutStrLn, stdout)
 
-main = do
+data StreamFlag = FILE FilePath | STDOUT
+
+doEnc :: FilePath -> IO ()
+doEnc f = do
+  putStr "encrypt key: " `seq` return ()  -- don't work strictly
   k <- doInitialize
-  c <- doEncode k
-  let w = writefile <$> c
-  p <- doDecode k c
-  fromRight w
+  m <- readline
+  e <- doEncode m k
+  fromRight $ (writeStream (FILE f)) <$> e
+
+doDec :: FilePath -> IO ()
+doDec f = do
+  print "doDec"
+  k <- doInitialize
+  m <- readfile f
+  d <- doDecode m k
+  fromRight $ (writeStream STDOUT) <$> d
 
 fromRight :: Either a b -> b
-fromRight (Left a)  = error "failed to encode"
+fromRight (Left a)  = error "error"
 fromRight (Right b) = b
 
-initialize :: ByteString -> IO (Either KeyError DES)
-initialize s = do
+doInitialize :: IO (Either KeyError DES)
+doInitialize = do
+  b <- doReadStream
+  --print b
+  initializeKey b
+
+initializeKey :: ByteString -> IO (Either KeyError DES)
+initializeKey s = do
   let t = takekey <$> toDESKey s
   let x = ciphername t --in print x
   let x = cipherkeysize t --in print x
   return t
 
-doInitialize :: IO (Either KeyError DES)
-doInitialize = do
-  b <- doReadfile
-  --print b
-  initialize b
+doReadStream :: IO ByteString
+doReadStream = readline
 
-doReadfile :: IO ByteString
-doReadfile = readfixstr
-
-doEncode :: Either KeyError DES -> IO (Either KeyError ByteString)
-doEncode key = do
-  let c = encode <$> key
-  --print c
-  return c
-
-doDecode :: Either KeyError DES
-            -> Either KeyError ByteString
+doEncode :: ByteString
+            -> Either KeyError DES
             -> IO (Either KeyError ByteString)
-doDecode k a = do
-  let e = decode <$> k <*> a
+doEncode msg key = do
+  let e = (encode msg) <$> key
   --print e
   return e
 
-encode :: DES -> ByteString
-encode = flip ecbEncrypt (pack "ciphered")
+doDecode :: ByteString
+            -> Either KeyError DES
+            -> IO (Either KeyError ByteString)
+doDecode msg key = do
+  let d = (decode msg) <$> key
+  --print d
+  return d
 
-decode :: DES -> ByteString -> ByteString
-decode = ecbDecrypt
+encode :: ByteString -> DES -> ByteString
+encode = flip ecbEncrypt
 
-writefile :: ByteString -> IO ()
-writefile = writeFile ".\\ciphered.txt"
+decode :: ByteString -> DES -> ByteString
+decode = flip ecbDecrypt
 
--- buggy
-readfile :: IO ByteString
-readfile = readFile ".\\passwd.txt"
+writeStream :: StreamFlag -> ByteString -> IO ()
+writeStream (FILE f) = writeFile f
+writeStream STDOUT   = (putStr . filter isAlphaNum . unpack)
 
--- buggy
+readfile :: FilePath -> IO ByteString
+readfile = readFile
+
 readline :: IO ByteString
 readline = fmap (pack . filter isAlphaNum) getLine
 
