@@ -1,32 +1,56 @@
 module ENDEC where
 
-import Prelude hiding (readFile)
+import Prelude hiding (readFile, writeFile)
 import Data.Char (isAlphaNum)
-import Data.ByteString.Char8 (ByteString, pack, readFile)
+import Data.ByteString.Char8 (ByteString, pack, readFile, writeFile)
 import Data.Functor ((<$>))
 import Data.SecureMem (toSecureMem)
 import Crypto.Cipher
 import Crypto.Cipher.Types
 
 main = do
-  key <- initialize
-  let w = encode <$> key
-  --print w
+  doEnc
   return ()
 
-initialize :: IO (Either KeyError DES)
-initialize = do
-  --s <- readfile
-  --s <- readline
-  s <- readfixstr
+doEnc :: IO ()
+doEnc = do
+  k <- doInitialize
+  e <- doEncode k
+  fromRight $ writefile <$> e
+
+fromRight :: Either a b -> b
+fromRight (Left a)  = error "error"
+fromRight (Right b) = b
+
+doInitialize :: IO (Either KeyError DES)
+doInitialize = do
+  b <- doReadStream
+  --print b
+  initialize b
+
+initialize :: ByteString -> IO (Either KeyError DES)
+initialize s = do
   let t = takekey <$> toDESKey s
   let x = ciphername t --in print x
   let x = cipherkeysize t --in print x
   return t
 
+doReadStream :: IO ByteString
+doReadStream = readfixstr
+
+doEncode :: Either KeyError DES
+            -> IO (Either KeyError ByteString)
+doEncode key = do
+  let e = encode <$> key
+  --print e
+  return e
+
 encode :: DES -> ByteString
 encode = flip ecbEncrypt bs
   where bs = pack "message"
+
+writefile :: ByteString -> IO ()
+writefile = writeFile ".\\cipher"
 
 -- buggy
 readfile :: IO ByteString
