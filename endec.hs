@@ -15,27 +15,23 @@ main = do
 
 doEnc :: FilePath -> IO ()
 doEnc f = do
-  k <- doInitialize
-  m <- readline
-  e <- doEncode m k
-  fromRight $ writeStream (FILE f) <$> e
+  kt <- readline
+  k <- initializeKey kt
+  p <- readline
+  c <- doEncode p k
+  fromRight $ writeStream (FILE f) <$> c
 
 doDec :: FilePath -> IO ()
 doDec f = do
-  k <- doInitialize
-  m <- readfile f
-  d <- doDecode m k
-  fromRight $ writeStream STDOUT <$> d
+  kt <- readline
+  k <- initializeKey kt
+  c <- readfile f
+  p <- doDecode c k
+  fromRight $ writeStream STDOUT <$> p
 
 fromRight :: Either a b -> b
 fromRight (Left a)  = error "error"
 fromRight (Right b) = b
-
-doInitialize :: IO (Either KeyError DES)
-doInitialize = do
-  b <- doReadStream
-  --print b
-  initializeKey b
 
 initializeKey :: ByteString -> IO (Either KeyError DES)
 initializeKey s = do
@@ -43,9 +39,6 @@ initializeKey s = do
   let x = ciphername t --in print x
   let x = cipherkeysize t --in print x
   return t
-
-doReadStream :: IO ByteString
-doReadStream = readline
 
 doEncode :: ByteString
             -> Either KeyError DES
