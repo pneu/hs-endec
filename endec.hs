@@ -2,7 +2,7 @@ module ENDEC where
 
 import Prelude hiding (readFile, writeFile)
 import Data.Char (isAlphaNum)
-import Data.ByteString.Char8 (ByteString, pack, readFile, writeFile)
+import Data.ByteString.Char8 (ByteString, pack, unpack, readFile, writeFile)
 import Data.Functor ((<$>))
 import Data.SecureMem (toSecureMem)
 import Crypto.Cipher
@@ -10,6 +10,7 @@ import Crypto.Cipher.Types
 
 main = do
   doEnc "cipher"
+  doDec "cipher"
   return ()
 
 doEnc :: FilePath -> IO ()
@@ -17,7 +18,14 @@ doEnc f = do
   k <- doInitialize
   m <- readline
   e <- doEncode m k
-  fromRight $ writefile f <$> e
+  fromRight $ writeStream (FILE f) <$> e
+
+doDec :: FilePath -> IO ()
+doDec f = do
+  k <- doInitialize
+  m <- readfile f
+  d <- doDecode m k
+  fromRight $ writeStream STDOUT <$> d
 
 fromRight :: Either a b -> b
 fromRight (Left a)  = error "error"
@@ -47,11 +55,25 @@ doEncode msg key = do
   --print e
   return e
 
+doDecode :: ByteString
+            -> Either KeyError DES
+            -> IO (Either KeyError ByteString)
+doDecode msg key = do
+  let d = decode msg <$> key
+  --print d
+  return d
+
 encode :: ByteString -> DES -> ByteString
 encode = flip ecbEncrypt
 
-writefile :: FilePath -> ByteString -> IO ()
-writefile = writeFile
+decode :: ByteString -> DES -> ByteString
+decode = flip ecbDecrypt
+
+data StreamFlag = FILE FilePath | STDOUT
+
+writeStream :: StreamFlag -> ByteString -> IO ()
+writeStream (FILE f) = writeFile f
+writeStream STDOUT   = putStr . filter isAlphaNum . unpack
 
 readfile :: FilePath -> IO ByteString
 readfile = readFile
