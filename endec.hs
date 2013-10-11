@@ -9,15 +9,15 @@ import Crypto.Cipher
 import Crypto.Cipher.Types
 
 main = do
-  doEnc
+  doEnc "cipher"
   return ()
 
-doEnc :: IO ()
-doEnc = do
+doEnc :: FilePath -> IO ()
+doEnc f = do
   k <- doInitialize
   m <- readline
   e <- doEncode m k
-  fromRight $ writefile <$> e
+  fromRight $ writefile f <$> e
 
 fromRight :: Either a b -> b
 fromRight (Left a)  = error "error"
@@ -50,17 +50,14 @@ doEncode msg key = do
 encode :: ByteString -> DES -> ByteString
 encode = flip ecbEncrypt
 
-writefile :: ByteString -> IO ()
-writefile = writeFile ".\\cipher"
+writefile :: FilePath -> ByteString -> IO ()
+writefile = writeFile
 
-readfile :: IO ByteString
-readfile = readFile ".\\passwd.txt"
+readfile :: FilePath -> IO ByteString
+readfile = readFile
 
 readline :: IO ByteString
 readline = fmap (pack . filter isAlphaNum) getLine
-
-readfixstr :: IO ByteString
-readfixstr = (return . pack . filter isAlphaNum) "password"
 
 toDESKey :: ByteString -> Either KeyError (Key DES)
 toDESKey = makeKey . toSecureMem
