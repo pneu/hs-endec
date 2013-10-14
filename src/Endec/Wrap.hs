@@ -1,11 +1,11 @@
 module Endec.Wrap (
-  readline,
-  readfile,
   initializeKey,
   doEncode,
   doDecode,
   StreamFlag(..),
+  readStream,
   writeStream,
+  toByteString,
   ) where
 
 import Prelude hiding (readFile, writeFile)
@@ -45,17 +45,18 @@ encode = flip ecbEncrypt
 decode :: ByteString -> DES -> ByteString
 decode = flip ecbDecrypt
 
-data StreamFlag = FILE FilePath | STDOUT
+data StreamFlag = FILE FilePath | STDOUT | STDIN
 
 writeStream :: StreamFlag -> ByteString -> IO ()
 writeStream (FILE f) = writeFile f
 writeStream STDOUT   = putStr . filter isAlphaNum . unpack
 
-readfile :: FilePath -> IO ByteString
-readfile = readFile
+readStream :: StreamFlag -> IO ByteString
+readStream (FILE f) = readFile f
+readStream STDIN    = fmap (pack . filter isAlphaNum) getLine
 
-readline :: IO ByteString
-readline = fmap (pack . filter isAlphaNum) getLine
+toByteString :: String -> ByteString
+toByteString = pack . filter isAlphaNum
 
 toDESKey :: ByteString -> Either KeyError (Key DES)
 toDESKey = makeKey . toSecureMem

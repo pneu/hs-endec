@@ -1,7 +1,8 @@
 module Main where
 import Endec (doEnc, doDec)
 
+main :: IO ()
 main = do
-  doEnc "cipher"
-  doDec "cipher"
+  doEnc "cipher" "password"
+  doDec "cipher" "password"
   return ()
