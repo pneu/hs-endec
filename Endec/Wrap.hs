@@ -66,5 +66,3 @@ takekey = cipherInit
 --- * helper for debug print
 ciphername = (cipherName <$>)
 cipherkeysize = (cipherKeySize <$>)
-
--- vim: set ts=2 sts=2 sw=2 ai et tw=78:

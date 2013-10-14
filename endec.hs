@@ -30,5 +30,3 @@ doDec f = do
 fromRight :: Either a b -> b
 fromRight (Left a)  = error "error"
 fromRight (Right b) = b
-
--- vim: set ts=2 sts=2 sw=2 ai et tw=78:
