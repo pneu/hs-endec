@@ -64,5 +64,7 @@ takekey :: Key DES -> DES
 takekey = cipherInit
 
 --- * helper for debug print
+ciphername :: (Functor f, Cipher c) => f c -> f String
 ciphername = (cipherName <$>)
+cipherkeysize :: (Functor f, Cipher c) => f c -> f KeySizeSpecifier
 cipherkeysize = (cipherKeySize <$>)
